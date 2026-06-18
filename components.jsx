@@ -84,7 +84,7 @@ function KPI({ icon: I, label, value, sub, accent, alert }) {
 }
 
 /* ---------------- Card de pedido ---------------- */
-function OrderCard({ order, onClick, onAdvance, compact }) {
+function OrderCard({ order, onClick, onAdvance, compact, showValues = true, canAdvance = true }) {
   const total = EX.orderTotal(order);
   const qty = EX.orderQty(order);
   const late = EX.isLate(order);
@@ -116,11 +116,13 @@ function OrderCard({ order, onClick, onAdvance, compact }) {
       </div>
       {!compact && (
         <div className="ex-card-foot">
-          <span className="ex-card-total">{EX.BRL(total)}</span>
-          {next && advLabel ? (
+          {showValues ? <span className="ex-card-total">{EX.BRL(total)}</span> : <span className="ex-card-supp">Valores restritos</span>}
+          {next && advLabel && canAdvance ? (
             <button className="ex-adv" onClick={(e) => { e.stopPropagation(); onAdvance(order.id); }}>
               {advLabel} <Icons.chevR size={13} />
             </button>
+          ) : next ? (
+            <span className="ex-card-supp">Somente leitura</span>
           ) : (
             <span className="ex-done-tag"><Icons.check size={13} /> ok</span>
           )}

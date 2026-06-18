@@ -11,11 +11,36 @@
 
   // can(user, acao) -> bool
   const PERMS = {
-    gerente:  { criar: true,  editar: true,  excluir: true,  status: true,  conferir: true,  glpi: true,  relatorios: true },
-    operador: { criar: true,  editar: true,  excluir: false, status: true,  conferir: true,  glpi: true,  relatorios: true },
-    leitura:  { criar: false, editar: false, excluir: false, status: false, conferir: false, glpi: false, relatorios: true },
+    gerente: {
+      pedidosVer: true, pedidosCriar: true, pedidosEditar: true, pedidosExcluir: true, pedidosStatus: true, pedidosConferir: true,
+      chamadosVer: true, chamadosCriar: true, chamadosEditar: true, chamadosExcluir: true, chamadosStatus: true, chamadosGlpi: true,
+      anexosEditar: true, historicoVer: true, relatoriosVer: true, valoresVer: true,
+    },
+    operador: {
+      pedidosVer: true, pedidosCriar: true, pedidosEditar: true, pedidosExcluir: false, pedidosStatus: true, pedidosConferir: true,
+      chamadosVer: true, chamadosCriar: true, chamadosEditar: true, chamadosExcluir: false, chamadosStatus: true, chamadosGlpi: true,
+      anexosEditar: true, historicoVer: true, relatoriosVer: false, valoresVer: false,
+    },
+    leitura: {
+      pedidosVer: true, pedidosCriar: false, pedidosEditar: false, pedidosExcluir: false, pedidosStatus: false, pedidosConferir: false,
+      chamadosVer: true, chamadosCriar: false, chamadosEditar: false, chamadosExcluir: false, chamadosStatus: false, chamadosGlpi: false,
+      anexosEditar: false, historicoVer: true, relatoriosVer: false, valoresVer: false,
+    },
   };
-  const can = (user, acao) => !!(user && PERMS[user.role] && PERMS[user.role][acao]);
+  const ALIASES = {
+    criar: "pedidosCriar",
+    editar: "pedidosEditar",
+    excluir: "pedidosExcluir",
+    status: "pedidosStatus",
+    conferir: "pedidosConferir",
+    glpi: "chamadosGlpi",
+    relatorios: "relatoriosVer",
+  };
+  const can = (user, acao) => {
+    if (!user || !PERMS[user.role]) return false;
+    const key = ALIASES[acao] || acao;
+    return !!PERMS[user.role][key];
+  };
 
   const USERS = [
     { id: "u-ana",    nome: "Ana Ferraz",     cargo: "Gerente de Logística", role: "gerente",  iniciais: "AF", cor: "#234A78", senha: "1234" },

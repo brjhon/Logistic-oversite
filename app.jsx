@@ -133,8 +133,17 @@ function App() {
   const isPed = section === "pedidos";
   const isRel = section === "relatorios";
   const isHist = section === "historico";
+  const podeVerRelatorios = AU.can(me, "relatoriosVer");
+  const podeVerValores = AU.can(me, "valoresVer");
+  const podeStatusPedido = AU.can(me, "pedidosStatus");
+  const podeStatusChamado = AU.can(me, "chamadosStatus");
+  const showValues = !!(t.showValues && podeVerValores);
   const semChrome = isRel; // só relatórios esconde a busca
   const switchSection = (s) => { setSection(s); setQuery(""); setSelId(null); setSelCh(null); };
+
+  useEffect(() => {
+    if (section === "relatorios" && !podeVerRelatorios) switchSection("pedidos");
+  }, [section, podeVerRelatorios]);
 
   const sel = orders.find((o) => o.id === selId) || null;
   const selChamado = chamados.find((c) => c.id === selCh) || null;
@@ -241,7 +250,7 @@ function App() {
     ? [{ key: "todos", label: "Todos", count: orders.length }, ...EXA.STATUS.map((s) => ({ key: s.key, label: s.label, count: orders.filter((o) => o.status === s.key).length, color: s.color }))]
     : [{ key: "todos", label: "Todos", count: chamados.length }, ...CHM.CH_STATUS.map((s) => ({ key: s.key, label: s.label, count: chamados.filter((c) => c.status === s.key).length, color: s.color }))];
 
-  const podeCriar = AU.can(me, "criar");
+  const podeCriar = isPed ? AU.can(me, "pedidosCriar") : AU.can(me, "chamadosCriar");
   const newAction = () => { if (isPed) setShowAdd(true); else { setChPrefill(null); setShowNewCh(true); } };
 
   if (!me) return <LoginScreen onLogin={login} />;
@@ -264,9 +273,11 @@ function App() {
           <button className={"ex-navbtn" + (isHist ? " is-on" : "")} onClick={() => switchSection("historico")}>
             <Icons.clock size={17} /> <span className="ex-nav-lbl">Histórico</span>
           </button>
-          <button className={"ex-navbtn" + (isRel ? " is-on" : "")} onClick={() => switchSection("relatorios")}>
-            <Icons.chart size={17} /> <span className="ex-nav-lbl">Relatórios</span>
-          </button>
+          {podeVerRelatorios && (
+            <button className={"ex-navbtn" + (isRel ? " is-on" : "")} onClick={() => switchSection("relatorios")}>
+              <Icons.chart size={17} /> <span className="ex-nav-lbl">Relatórios</span>
+            </button>
+          )}
         </div>
         {!isRel && !isHist && (
           <>
@@ -323,15 +334,15 @@ function App() {
               <KPI icon={Icons.truck} label="Em trânsito" value={kpis.transito} sub="a caminho do destino" accent="#2F6FCF" />
               <KPI icon={Icons.box} label="Aguardando conferência" value={kpis.chegou} sub="chegaram, pendentes" accent="#B66A12" />
               <KPI icon={Icons.alert} label="Atrasados" value={kpis.late} sub={kpis.late ? "exigem atenção" : "tudo no prazo"} accent="#B42318" alert={kpis.late > 0} />
-              {t.showValues && <KPI icon={Icons.doc} label="Valor em aberto" value={EXA.BRL(kpis.valorAberto)} sub="pedidos não concluídos" accent="#1F7A45" />}
+              {showValues && <KPI icon={Icons.doc} label="Valor em aberto" value={EXA.BRL(kpis.valorAberto)} sub="pedidos não concluídos" accent="#1F7A45" />}
             </section>
             {view === "board"
-              ? <BoardView orders={filtered} onSelect={setSelId} onAdvance={advance} compact={t.density === "compact"} />
-              : <ListView orders={filtered} onSelect={setSelId} showValues={t.showValues} />}
+              ? <BoardView orders={filtered} onSelect={setSelId} onAdvance={advance} compact={t.density === "compact"} showValues={showValues} canAdvance={podeStatusPedido} />
+              : <ListView orders={filtered} onSelect={setSelId} showValues={showValues} />}
           </>
         )}
         {section === "chamados" && (
-          <ChamadosContent chamados={chamadosFiltered} view={view} onSelect={setSelCh} onAdvance={advanceCh} compact={t.density === "compact"} />
+          <ChamadosContent chamados={chamadosFiltered} view={view} onSelect={setSelCh} onAdvance={advanceCh} compact={t.density === "compact"} canAdvance={podeStatusChamado} />
         )}
         {isRel && <ReportsView orders={orders} chamados={chamados} />}
         {isHist && <GlobalHistory orders={orders} chamados={chamados} query={query} onOpenPedido={openPedidoByNum} onOpenChamado={openChamado} />}
@@ -340,13 +351,13 @@ function App() {
       {/* FAB mobile */}
       {!isRel && !isHist && podeCriar && <button className="ex-fab" onClick={newAction} aria-label="Novo"><Icons.plus size={22} /></button>}
 
-      {showAdd && <OrderModal onClose={() => setShowAdd(false)} onSave={addOrder} nextNum={nextNum} />}
-      {editOrder && <OrderModal onClose={() => setEditOrder(null)} onSave={saveEditOrder} edit={editOrder} />}
+      {showAdd && <OrderModal onClose={() => setShowAdd(false)} onSave={addOrder} nextNum={nextNum} showValues={showValues} />}
+      {editOrder && <OrderModal onClose={() => setEditOrder(null)} onSave={saveEditOrder} edit={editOrder} showValues={showValues} />}
       {confOrder && <ConferenciaModal order={confOrder} onClose={() => setConfOrder(null)} onConfirm={confirmConf} />}
       {sel && <DetailDrawer order={sel} me={me} linked={linkedFor(sel.numero)} onClose={() => setSelId(null)}
         onStatus={setStatus} onDelete={delOrder} onEdit={(o) => { setSelId(null); setEditOrder(o); }}
         onConferir={(o) => { setSelId(null); setConfOrder(o); }} onAbrirChamado={abrirChamadoDoPedido} onOpenChamado={openChamado}
-        onAddAnexo={addAnexoOrder} onRemoveAnexo={rmAnexoOrder} onComprovante={(o) => setComprovOrder(o)} />}
+        onAddAnexo={addAnexoOrder} onRemoveAnexo={rmAnexoOrder} onComprovante={(o) => setComprovOrder(o)} showValues={showValues} />}
       {comprovOrder && <ComprovanteModal order={orders.find((o) => o.id === comprovOrder.id) || comprovOrder} me={me} onClose={() => setComprovOrder(null)} onSaveEntrega={saveEntrega} />}
 
       {showNewCh && <NewChamadoModal onClose={() => { setShowNewCh(false); setChPrefill(null); }} onSave={addChamado} nextNum={nextChNum} pedidos={orders} pedidoPrefill={chPrefill} />}
@@ -363,7 +374,7 @@ function App() {
         <TweakRadio label="Densidade" value={t.density} options={["compact", "regular"]} onChange={(v) => setTweak("density", v)} />
         <TweakSection label="Visualização" />
         <TweakRadio label="Padrão" value={t.view} options={["board", "list"]} onChange={(v) => setTweak("view", v)} />
-        <TweakToggle label="Mostrar valores (R$)" value={t.showValues} onChange={(v) => setTweak("showValues", v)} />
+        {podeVerValores && <TweakToggle label="Mostrar valores (R$)" value={t.showValues} onChange={(v) => setTweak("showValues", v)} />}
       </TweaksPanel>
     </div>
   );

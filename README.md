@@ -32,6 +32,12 @@ A sessão fica salva no navegador e expira automaticamente após 8 horas.
 
 Este login é apenas demonstrativo, feito no frontend. Ele organiza perfis e permissões para a demo, mas não substitui autenticação real com backend.
 
+Perfis da demo:
+
+- `Gerente`: acesso total, incluindo exclusões, relatórios e valores.
+- `Operador`: opera pedidos e chamados, sem exclusão, relatórios ou valores financeiros.
+- `Consulta`: visualização sem ações de edição, status, GLPI ou valores.
+
 ## Dados
 
 Os dados são salvos no navegador via `localStorage`.

@@ -65,7 +65,8 @@ function ComprovanteModal({ order, me, onClose, onSaveEntrega }) {
   const [receiver, setReceiver] = useStateC(order.entrega ? order.entrega.por : (order.cliente || ""));
   const [doc, setDoc] = useStateC(order.entrega ? (order.entrega.doc || "") : "");
   const [sig, setSig] = useStateC(order.entrega ? order.entrega.assinatura : null);
-  const podeAssinar = window.AUTH.can(me, "status");
+  const podeAssinar = window.AUTH.can(me, "pedidosStatus");
+  const podeVerValores = window.AUTH.can(me, "valoresVer");
   const total = EXC.orderTotal(order);
   const entrega = order.entrega;
 
@@ -138,13 +139,13 @@ function ComprovanteModal({ order, me, onClose, onSaveEntrega }) {
           </div>
 
           <table className="ex-cmp-table">
-            <thead><tr><th>Item / descrição</th><th>Qtd</th><th>Valor un.</th><th>Subtotal</th></tr></thead>
+            <thead><tr><th>Item / descrição</th><th>Qtd</th>{podeVerValores && <th>Valor un.</th>}{podeVerValores && <th>Subtotal</th>}</tr></thead>
             <tbody>
               {order.itens.map((it, i) => (
-                <tr key={i}><td>{it.nome}</td><td className="num">{it.qtd}</td><td className="num">{EXC.BRL(it.valor)}</td><td className="num">{EXC.BRL(it.qtd * it.valor)}</td></tr>
+                <tr key={i}><td>{it.nome}</td><td className="num">{it.qtd}</td>{podeVerValores && <td className="num">{EXC.BRL(it.valor)}</td>}{podeVerValores && <td className="num">{EXC.BRL(it.qtd * it.valor)}</td>}</tr>
               ))}
             </tbody>
-            <tfoot><tr><td colSpan={3}>Total do pedido · {EXC.orderQty(order)} itens</td><td className="num">{EXC.BRL(total)}</td></tr></tfoot>
+            <tfoot><tr><td colSpan={podeVerValores ? 3 : 1}>Total do pedido · {EXC.orderQty(order)} itens</td>{podeVerValores && <td className="num">{EXC.BRL(total)}</td>}</tr></tfoot>
           </table>
 
           {order.obs ? <div className="ex-cmp-obs"><label>Observações</label><p>{order.obs}</p></div> : null}

@@ -27,21 +27,46 @@
   const byId = (id) => USERS.find((u) => u.id === id) || null;
 
   const LS_USER = "eixo.user.v1";
-  function loadUser() {
+  const SESSION_MS = 8 * 60 * 60 * 1000;
+
+  function readSession() {
     try {
-      const id = localStorage.getItem(LS_USER);
-      if (id) return byId(id);
-    } catch (e) {}
-    return null;
+      const raw = localStorage.getItem(LS_USER);
+      if (!raw) return null;
+
+      // Compatibilidade com sessões antigas, salvas como apenas o id do usuário.
+      if (raw.charAt(0) !== "{") {
+        return { id: raw, loginAt: Date.now() };
+      }
+
+      const session = JSON.parse(raw);
+      if (!session || !session.id || !session.loginAt) return null;
+      if (Date.now() - session.loginAt > SESSION_MS) {
+        localStorage.removeItem(LS_USER);
+        return null;
+      }
+      return session;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function loadUser() {
+    const session = readSession();
+    return session ? byId(session.id) : null;
   }
   function saveUser(id) {
     try {
-      if (id) localStorage.setItem(LS_USER, id);
+      if (id) localStorage.setItem(LS_USER, JSON.stringify({ id, loginAt: Date.now() }));
       else localStorage.removeItem(LS_USER);
     } catch (e) {}
+  }
+  function sessionMsLeft() {
+    const session = readSession();
+    return session ? Math.max(0, SESSION_MS - (Date.now() - session.loginAt)) : 0;
   }
   // versão enxuta do usuário para gravar em históricos
   const stamp = (u) => u ? { id: u.id, nome: u.nome, iniciais: u.iniciais, cor: u.cor } : { nome: "Sistema", iniciais: "EX", cor: "#8A94A4" };
 
-  window.AUTH = { ROLES, PERMS, can, USERS, byId, loadUser, saveUser, stamp };
+  window.AUTH = { ROLES, PERMS, SESSION_MS, can, USERS, byId, loadUser, saveUser, sessionMsLeft, stamp };
 })();

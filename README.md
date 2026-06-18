@@ -28,6 +28,10 @@ Senha demo:
 1234
 ```
 
+A sessão fica salva no navegador e expira automaticamente após 8 horas.
+
+Este login é apenas demonstrativo, feito no frontend. Ele organiza perfis e permissões para a demo, mas não substitui autenticação real com backend.
+
 ## Dados
 
 Os dados são salvos no navegador via `localStorage`.

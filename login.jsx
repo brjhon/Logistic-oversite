@@ -8,7 +8,7 @@ function LoginScreen({ onLogin }) {
   const user = AU.byId(sel);
 
   const entrar = () => {
-    if (senha !== user.senha) { setErro("Senha incorreta. (demo: 1234)"); return; }
+    if (senha !== user.senha) { setErro("Senha incorreta."); return; }
     onLogin(user.id);
   };
   const onKey = (e) => { if (e.key === "Enter") entrar(); };
@@ -46,7 +46,7 @@ function LoginScreen({ onLogin }) {
             <span className="ex-field-label">Senha</span>
             <input type="password" value={senha} autoFocus
               onChange={(e) => { setSenha(e.target.value); setErro(""); }}
-              onKeyDown={onKey} placeholder="Digite a senha (demo: 1234)" />
+              onKeyDown={onKey} placeholder="Digite sua senha" />
           </label>
           {erro ? <div className="ex-login-err"><Icons.alert size={14} /> {erro}</div> : null}
 
@@ -54,7 +54,7 @@ function LoginScreen({ onLogin }) {
             <Icons.logout size={16} style={{ transform: "scaleX(-1)" }} /> Entrar
           </button>
           <div className="ex-login-note">
-            Ambiente de demonstração. Os papéis controlam o que cada pessoa pode fazer —
+            Ambiente de demonstração. A sessão expira automaticamente após 8 horas. Os papéis controlam o que cada pessoa pode fazer —
             <strong> Gerente</strong> faz tudo, <strong>Operador</strong> opera o dia a dia,
             <strong> Consulta</strong> só visualiza.
           </div>

@@ -117,6 +117,17 @@ function App() {
   const login = (id) => { AU.saveUser(id); setMe(AU.byId(id)); };
   const logout = () => { AU.saveUser(null); setMe(null); };
 
+  useEffect(() => {
+    if (!me) return;
+    const msLeft = AU.sessionMsLeft();
+    if (msLeft <= 0) {
+      logout();
+      return;
+    }
+    const timer = setTimeout(logout, msLeft);
+    return () => clearTimeout(timer);
+  }, [me]);
+
   const stamp = AU.stamp(me);
   const ev = (tipo, texto) => HI.makeEvent(stamp, tipo, texto);
   const isPed = section === "pedidos";

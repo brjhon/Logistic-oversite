@@ -102,6 +102,7 @@ function App() {
   const [selId, setSelId] = useState(null);
   const [selCh, setSelCh] = useState(null);
   const [glpiFor, setGlpiFor] = useState(null);
+  const [toasts, setToasts] = useState([]);
 
   useEffect(() => saveOrders(orders), [orders]);
   useEffect(() => saveChamados(chamados), [chamados]);
@@ -116,6 +117,12 @@ function App() {
 
   const login = (id) => { AU.saveUser(id); setMe(AU.byId(id)); };
   const logout = () => { AU.saveUser(null); setMe(null); };
+  const pushToast = React.useCallback((toast) => {
+    const id = "toast-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+    setToasts((p) => [{ id, ...toast }, ...p].slice(0, 5));
+    setTimeout(() => setToasts((p) => p.filter((t) => t.id !== id)), 5400);
+  }, []);
+  const closeToast = (id) => setToasts((p) => p.filter((t) => t.id !== id));
 
   useEffect(() => {
     if (!me) return;
@@ -133,12 +140,13 @@ function App() {
   const isPed = section === "pedidos";
   const isRel = section === "relatorios";
   const isHist = section === "historico";
+  const isWar = section === "sala";
   const podeVerRelatorios = AU.can(me, "relatoriosVer");
   const podeVerValores = AU.can(me, "valoresVer");
   const podeStatusPedido = AU.can(me, "pedidosStatus");
   const podeStatusChamado = AU.can(me, "chamadosStatus");
   const showValues = !!(t.showValues && podeVerValores);
-  const semChrome = isRel; // só relatórios esconde a busca
+  const semChrome = isRel || isWar; // relatórios e sala escondem a busca
   const switchSection = (s) => { setSection(s); setQuery(""); setSelId(null); setSelCh(null); };
 
   useEffect(() => {
@@ -186,7 +194,11 @@ function App() {
     o.id === id ? { ...o, ...patch, historico: [...(o.historico || []), ...(events || [])] } : o));
   const advance = (id) => { const o = orders.find((x) => x.id === id); const nx = EXA.nextStatus(o.status); if (nx) updOrder(id, { status: nx }, [ev("status", `Status → ${EXA.STATUS_MAP[nx].label}.`)]); };
   const setStatus = (id, st) => { const o = orders.find((x) => x.id === id); if (o && o.status !== st) updOrder(id, { status: st }, [ev("status", `Status → ${EXA.STATUS_MAP[st].label}.`)]); };
-  const addOrder = (o) => { setOrders((p) => [{ ...o, historico: [ev("criou", `Pedido ${o.numero} registrado para ${o.cliente}.`)] }, ...p]); setShowAdd(false); setSelId(o.id); };
+  const addOrder = (o) => {
+    setOrders((p) => [{ ...o, historico: [ev("criou", `Pedido ${o.numero} registrado para ${o.cliente}.`)] }, ...p]);
+    pushToast({ type: "pedido", msg: `${o.numero} registrado para ${o.cliente}` });
+    setShowAdd(false); setSelId(o.id);
+  };
   const saveEditOrder = (u) => { setOrders((p) => p.map((o) => o.id === u.id ? { ...u, historico: [...(o.historico || []), ev("editou", "Dados do pedido atualizados.")] } : o)); setEditOrder(null); };
   const delOrder = (id) => {
     const o = orders.find((x) => x.id === id);
@@ -197,7 +209,11 @@ function App() {
   };
   const addAnexoOrder = (id, novos) => updOrder(id, { anexos: [...(orders.find((o) => o.id === id).anexos || []), ...novos] }, [ev("comentou", `${novos.length} anexo(s) adicionado(s): ${novos.map((n) => n.nome).join(", ")}.`)]);
   const rmAnexoOrder = (id, axId) => { const o = orders.find((x) => x.id === id); const a = (o.anexos || []).find((x) => x.id === axId); updOrder(id, { anexos: (o.anexos || []).filter((x) => x.id !== axId) }, [ev("comentou", `Anexo removido${a ? ": " + a.nome : ""}.`)]); };
-  const saveEntrega = (id, entrega) => updOrder(id, { entrega }, [ev("conferiu", `Entrega assinada por ${entrega.por}.`)]);
+  const saveEntrega = (id, entrega) => {
+    const o = orders.find((x) => x.id === id);
+    updOrder(id, { entrega }, [ev("conferiu", `Entrega assinada por ${entrega.por}.`)]);
+    pushToast({ type: "entrega", msg: `${o ? o.numero : "Pedido"} recebido por ${entrega.por}` });
+  };
 
   /* conferência -> conclui + (se divergência) abre chamado automático */
   const confirmConf = (payload) => {
@@ -216,6 +232,7 @@ function App() {
         historico: [ev("criou", `Chamado aberto automaticamente pela conferência de ${o.numero}.`)],
       };
       setChamados((p) => [ch, ...p]);
+      pushToast({ type: "alerta", title: "Divergência detectada", msg: `${ch.numero} aberto para ${o.numero}` });
     }
     setConfOrder(null);
   };
@@ -225,7 +242,12 @@ function App() {
     c.id === id ? { ...c, ...patch, historico: [...(c.historico || []), ...(events || [])] } : c));
   const advanceCh = (id) => { const c = chamados.find((x) => x.id === id); const nx = CHM.nextCh(c.status); if (nx) updCh(id, { status: nx }, [ev("status", `Status → ${CHM.CH_MAP[nx].label}.`)]); };
   const setChStatus = (id, st) => { const c = chamados.find((x) => x.id === id); if (c && c.status !== st) updCh(id, { status: st }, [ev("status", `Status → ${CHM.CH_MAP[st].label}.`)]); };
-  const addChamado = (c) => { const full = { ...c, historico: [ev("criou", `Chamado ${c.numero} aberto.`)] }; setChamados((p) => [full, ...p]); setShowNewCh(false); setChPrefill(null); setSelCh(c.id); setGlpiFor(full); };
+  const addChamado = (c) => {
+    const full = { ...c, historico: [ev("criou", `Chamado ${c.numero} aberto.`)] };
+    setChamados((p) => [full, ...p]);
+    pushToast({ type: "chamado", msg: `${full.numero} · ${full.titulo}` });
+    setShowNewCh(false); setChPrefill(null); setSelCh(c.id); setGlpiFor(full);
+  };
   const saveEditCh = (u) => { setChamados((p) => p.map((c) => c.id === u.id ? { ...u, historico: [...(c.historico || []), ev("editou", "Dados do chamado atualizados.")] } : c)); setEditCh(null); };
   const delChamado = (id) => {
     const c = chamados.find((x) => x.id === id);
@@ -234,7 +256,11 @@ function App() {
     setChamados((p) => p.filter((chamado) => chamado.id !== id));
     setSelCh(null);
   };
-  const sendGlpi = (id, glpiId) => updCh(id, { glpi: { sent: true, id: glpiId, sentAt: EXA.TODAY } }, [ev("glpi", `Enviado ao GLPI — ticket #${glpiId}.`)]);
+  const sendGlpi = (id, glpiId) => {
+    const c = chamados.find((x) => x.id === id);
+    updCh(id, { glpi: { sent: true, id: glpiId, sentAt: EXA.TODAY } }, [ev("glpi", `Enviado ao GLPI — ticket #${glpiId}.`)]);
+    pushToast({ type: "glpi", msg: `${c ? c.numero : "Chamado"} · ticket #${glpiId}` });
+  };
   const addAnexoCh = (id, novos) => updCh(id, { anexos: [...(chamados.find((c) => c.id === id).anexos || []), ...novos] }, [ev("comentou", `${novos.length} anexo(s) adicionado(s): ${novos.map((n) => n.nome).join(", ")}.`)]);
   const rmAnexoCh = (id, axId) => { const c = chamados.find((x) => x.id === id); const a = (c.anexos || []).find((x) => x.id === axId); updCh(id, { anexos: (c.anexos || []).filter((x) => x.id !== axId) }, [ev("comentou", `Anexo removido${a ? ": " + a.nome : ""}.`)]); };
 
@@ -264,6 +290,9 @@ function App() {
           <div className="ex-brand-tx"><strong>EIXO</strong><span>Controle logístico</span></div>
         </div>
         <div className="ex-nav">
+          <button className={"ex-navbtn ex-navbtn--sala" + (isWar ? " is-on" : "")} onClick={() => switchSection("sala")}>
+            <Icons.bolt size={17} /> <span className="ex-nav-lbl">Sala de guerra</span><span className="wr-livetag">LIVE</span>
+          </button>
           <button className={"ex-navbtn" + (isPed ? " is-on" : "")} onClick={() => switchSection("pedidos")}>
             <Icons.box size={17} /> <span className="ex-nav-lbl">Pedidos</span><span className="ex-navct">{orders.length}</span>
           </button>
@@ -279,7 +308,7 @@ function App() {
             </button>
           )}
         </div>
-        {!isRel && !isHist && (
+        {!isRel && !isHist && !isWar && (
           <>
             <div className="ex-rail-cap">Filtrar por status</div>
             <div className="ex-rail-chips">
@@ -292,7 +321,7 @@ function App() {
             </div>
           </>
         )}
-        {(isRel || isHist) && <div className="ex-rail-chips" style={{ flex: 1 }} />}
+        {(isRel || isHist || isWar) && <div className="ex-rail-chips" style={{ flex: 1 }} />}
         <div className="ex-rail-foot">
           <UserMenu me={me} onLogout={logout} />
         </div>
@@ -300,7 +329,7 @@ function App() {
 
       {/* MAIN */}
       <main className="ex-main">
-        <header className="ex-top">
+        {!isWar && <header className="ex-top">
           <div className="ex-top-l">
             <h1>{isPed ? "Painel de operações" : isRel ? "Relatórios" : isHist ? "Histórico geral" : "Central de chamados"}</h1>
             <span className="ex-top-date">{EXA.fmtLongDate(EXA.TODAY)}</span>
@@ -313,20 +342,23 @@ function App() {
               </label>
             )}
             <NotificationsBell orders={orders} chamados={chamados} onOpenPedido={openPedidoByNum} onOpenChamado={openChamado} />
-            {!isRel && !isHist && (
+            {!isRel && !isHist && !isWar && (
               <div className="ex-viewtog">
                 <button className={view === "board" ? "is-on" : ""} onClick={() => setView("board")} aria-label="Quadro"><Icons.grid size={16} /></button>
                 <button className={view === "list" ? "is-on" : ""} onClick={() => setView("list")} aria-label="Lista"><Icons.list size={16} /></button>
               </div>
             )}
-            {!isRel && !isHist && podeCriar && (
+            {!isRel && !isHist && !isWar && podeCriar && (
               <button className="ex-btn ex-btn--primary ex-new" onClick={newAction}>
                 <Icons.plus size={16} /> <span>{isPed ? "Novo pedido" : "Novo chamado"}</span>
               </button>
             )}
           </div>
-        </header>
+        </header>}
 
+        {isWar && (
+          <WarRoom orders={orders} chamados={chamados} pushToast={pushToast} onOpenPedido={openPedidoByNum} onOpenChamado={openChamado} showValues={showValues} />
+        )}
         {isPed && (
           <>
             <section className="ex-kpis">
@@ -349,7 +381,7 @@ function App() {
       </main>
 
       {/* FAB mobile */}
-      {!isRel && !isHist && podeCriar && <button className="ex-fab" onClick={newAction} aria-label="Novo"><Icons.plus size={22} /></button>}
+      {!isRel && !isHist && !isWar && podeCriar && <button className="ex-fab" onClick={newAction} aria-label="Novo"><Icons.plus size={22} /></button>}
 
       {showAdd && <OrderModal onClose={() => setShowAdd(false)} onSave={addOrder} nextNum={nextNum} showValues={showValues} />}
       {editOrder && <OrderModal onClose={() => setEditOrder(null)} onSave={saveEditOrder} edit={editOrder} showValues={showValues} />}
@@ -366,6 +398,7 @@ function App() {
         onDelete={delChamado} onSendGlpi={(c) => setGlpiFor(c)} onEdit={(c) => { setSelCh(null); setEditCh(c); }} onOpenPedido={openPedidoByNum}
         onAddAnexo={addAnexoCh} onRemoveAnexo={rmAnexoCh} />}
       {glpiFor && <GlpiPrompt chamado={glpiFor} onSend={sendGlpi} onSkip={() => setGlpiFor(null)} />}
+      <ToastStack toasts={toasts} onClose={closeToast} />
 
       {/* TWEAKS */}
       <TweaksPanel>

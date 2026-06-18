@@ -65,6 +65,7 @@ Limpar os dados do site no navegador faz o app voltar para os dados de exemplo.
 - `comprovante.jsx`: comprovante de entrega e assinatura.
 - `relatorios.jsx`: KPIs, relatórios e exportação CSV.
 - `activity.jsx`: histórico geral.
+- `warroom.jsx`: sala de guerra operacional e notificações ao vivo.
 - `components.jsx`: componentes visuais compartilhados.
 - `history.js`: eventos e linha do tempo.
 - `tweaks-panel.jsx`: painel de ajustes visuais.

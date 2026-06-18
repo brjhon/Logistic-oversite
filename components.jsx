@@ -46,6 +46,13 @@ const Icons = {
   print:  (p) => <Icon {...p} d={<><path d="M6 9V3h12v6" /><path d="M6 18H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="7" rx="1" /></>} />,
   pen:    (p) => <Icon {...p} d={<><path d="M12 19l7-7a2.8 2.8 0 0 0-4-4l-7 7-1 5z" /><path d="M3 21h18" /></>} />,
   hub:    (p) => <Icon {...p} d={<><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="2.6" /><path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3" /></>} />,
+  arrowDown: (p) => <Icon {...p} d={<><path d="M12 5v14M6 13l6 6 6-6" /></>} />,
+  arrowUp:   (p) => <Icon {...p} d={<><path d="M12 19V5M6 11l6-6 6 6" /></>} />,
+  layers: (p) => <Icon {...p} d={<><path d="M12 3 3 8l9 5 9-5z" /><path d="M3 13l9 5 9-5" /></>} />,
+  warehouse: (p) => <Icon {...p} d={<><path d="M3 21V8l9-4 9 4v13" /><path d="M7 21v-7h10v7" /><path d="M7 17h10" /></>} />,
+  swap:   (p) => <Icon {...p} d={<><path d="M7 4 4 7l3 3" /><path d="M4 7h11a4 4 0 0 1 4 4" /><path d="m17 20 3-3-3-3" /><path d="M20 17H9a4 4 0 0 1-4-4" /></>} />,
+  barcode: (p) => <Icon {...p} d={<><path d="M4 5v14M7 5v14M10 5v10M13 5v14M17 5v14M20 5v14" /></>} />,
+  cart:   (p) => <Icon {...p} d={<><circle cx="9" cy="20" r="1.4" /><circle cx="18" cy="20" r="1.4" /><path d="M2 3h3l2.4 12.5a1.5 1.5 0 0 0 1.5 1.2h8.7a1.5 1.5 0 0 0 1.5-1.2L22 7H6" /></>} />,
 };
 
 /* ---------------- Status ---------------- */
@@ -84,7 +91,7 @@ function KPI({ icon: I, label, value, sub, accent, alert }) {
 }
 
 /* ---------------- Card de pedido ---------------- */
-function OrderCard({ order, onClick, onAdvance, compact, showValues = true, canAdvance = true }) {
+function OrderCard({ order, onClick, onAdvance, compact }) {
   const total = EX.orderTotal(order);
   const qty = EX.orderQty(order);
   const late = EX.isLate(order);
@@ -116,13 +123,11 @@ function OrderCard({ order, onClick, onAdvance, compact, showValues = true, canA
       </div>
       {!compact && (
         <div className="ex-card-foot">
-          {showValues ? <span className="ex-card-total">{EX.BRL(total)}</span> : <span className="ex-card-supp">Valores restritos</span>}
-          {next && advLabel && canAdvance ? (
+          <span className="ex-card-total">{EX.BRL(total)}</span>
+          {next && advLabel ? (
             <button className="ex-adv" onClick={(e) => { e.stopPropagation(); onAdvance(order.id); }}>
               {advLabel} <Icons.chevR size={13} />
             </button>
-          ) : next ? (
-            <span className="ex-card-supp">Somente leitura</span>
           ) : (
             <span className="ex-done-tag"><Icons.check size={13} /> ok</span>
           )}
@@ -172,4 +177,31 @@ function Timeline({ events }) {
   );
 }
 
-Object.assign(window, { Icon, Icons, StatusBadge, KPI, OrderCard, Avatar, Timeline });
+/* ---------------- Logo EIXO ---------------- */
+function LogoGlyph({ size = 28, stroke = 2.3 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden="true">
+      {/* eixo central + rotas de distribuição */}
+      <g stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 16 V5.5" />
+        <path d="M16 16 L6.8 21.2" />
+        <path d="M16 16 L25.2 21.2" />
+        <circle cx="16" cy="4.6" r="2.1" fill="currentColor" stroke="none" />
+        <circle cx="5.9" cy="22.6" r="2.1" fill="currentColor" stroke="none" />
+        <circle cx="26.1" cy="22.6" r="2.1" fill="currentColor" stroke="none" />
+      </g>
+      <circle cx="16" cy="16" r="3.4" fill="currentColor" />
+      <circle cx="16" cy="16" r="6.4" stroke="currentColor" strokeWidth={stroke * 0.7} opacity="0.34" />
+    </svg>
+  );
+}
+/* tile = mark dentro do quadrado da marca */
+function LogoTile({ size = 38, radius = 10 }) {
+  return (
+    <span className="ex-logo" style={{ width: size, height: size, borderRadius: radius }}>
+      <LogoGlyph size={Math.round(size * 0.62)} />
+    </span>
+  );
+}
+
+Object.assign(window, { Icon, Icons, StatusBadge, KPI, OrderCard, Avatar, Timeline, LogoGlyph, LogoTile });

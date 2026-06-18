@@ -35,7 +35,7 @@ function GlpiTag({ glpi }) {
 }
 
 /* ---------------- Card ---------------- */
-function ChamadoCard({ c, onClick, onAdvance, compact, canAdvance = true }) {
+function ChamadoCard({ c, onClick, onAdvance, compact }) {
   const s = CH.CH_MAP[c.status];
   const next = CH.nextCh(c.status);
   const advLabel = { novo: "Atender", atendimento: "Resolver", pendente: "Retomar", solucionado: "Fechar" }[c.status];
@@ -53,15 +53,11 @@ function ChamadoCard({ c, onClick, onAdvance, compact, canAdvance = true }) {
       {!compact && (
         <div className="ex-card-foot">
           <GlpiTag glpi={c.glpi} />
-          {next && advLabel && canAdvance ? (
+          {next && advLabel ? (
             <button className="ex-adv" onClick={(e) => { e.stopPropagation(); onAdvance(c.id); }}>
               {advLabel} <Icons.chevR size={13} />
             </button>
-          ) : next ? (
-            <span className="ex-card-supp">Somente leitura</span>
-          ) : (
-            <span className="ex-done-tag"><Icons.check size={13} /> fechado</span>
-          )}
+          ) : <span className="ex-done-tag"><Icons.check size={13} /> fechado</span>}
         </div>
       )}
     </article>
@@ -69,7 +65,7 @@ function ChamadoCard({ c, onClick, onAdvance, compact, canAdvance = true }) {
 }
 
 /* ---------------- Conteúdo (KPIs + quadro/lista) ---------------- */
-function ChamadosContent({ chamados, view, onSelect, onAdvance, compact, canAdvance = true }) {
+function ChamadosContent({ chamados, view, onSelect, onAdvance, compact }) {
   const abertos = chamados.filter(CH.isOpen).length;
   const atendimento = chamados.filter((c) => c.status === "atendimento").length;
   const altas = chamados.filter((c) => CH.isOpen(c) && (c.prioridade === "alta" || c.prioridade === "urgente")).length;
@@ -101,7 +97,7 @@ function ChamadosContent({ chamados, view, onSelect, onAdvance, compact, canAdva
                   {items.length === 0 ? (
                     <div className="ex-col-empty">Sem chamados</div>
                   ) : items.map((c) => (
-                    <ChamadoCard key={c.id} c={c} compact={compact} onClick={() => onSelect(c.id)} onAdvance={onAdvance} canAdvance={canAdvance} />
+                    <ChamadoCard key={c.id} c={c} compact={compact} onClick={() => onSelect(c.id)} onAdvance={onAdvance} />
                   ))}
                 </div>
               </div>
@@ -144,14 +140,19 @@ function ChamadosList({ chamados, onSelect }) {
 /* ---------------- Modal: novo / editar chamado ---------------- */
 function NewChamadoModal({ onClose, onSave, nextNum, pedidos, edit, pedidoPrefill }) {
   const isEdit = !!edit;
+  const pf = (pedidoPrefill && typeof pedidoPrefill === "object") ? pedidoPrefill : null;
+  const pedStr = (pedidoPrefill && typeof pedidoPrefill === "string") ? pedidoPrefill : null;
   const [f, setF] = useState(() => edit ? {
     tipo: edit.tipo, titulo: edit.titulo, categoria: edit.categoria, prioridade: edit.prioridade,
     pedido: edit.pedido || (pedidos[0] ? pedidos[0].numero : ""),
     solicitante: edit.solicitante === "—" ? "" : edit.solicitante,
     tecnico: edit.tecnico === "—" ? "" : edit.tecnico, descricao: edit.descricao,
+  } : pf ? {
+    tipo: pf.tipoChamado || "solicitacao", titulo: pf.titulo || "", categoria: pf.categoria || CH.CATEGORIAS[0],
+    prioridade: pf.prioridade || "media", pedido: pedidos[0] ? pedidos[0].numero : "", solicitante: "", tecnico: "", descricao: pf.descricao || "",
   } : {
-    tipo: pedidoPrefill ? "ocorrencia" : "ocorrencia", titulo: "", categoria: CH.CATEGORIAS[0], prioridade: "media",
-    pedido: pedidoPrefill || (pedidos[0] ? pedidos[0].numero : ""), solicitante: "", tecnico: "", descricao: "",
+    tipo: pedStr ? "ocorrencia" : "ocorrencia", titulo: "", categoria: CH.CATEGORIAS[0], prioridade: "media",
+    pedido: pedStr || (pedidos[0] ? pedidos[0].numero : ""), solicitante: "", tecnico: "", descricao: "",
   });
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const isOcc = f.tipo === "ocorrencia";
@@ -307,7 +308,7 @@ function ChamadoDrawer({ chamado, me, onClose, onStatus, onDelete, onSendGlpi, o
   const A = window.AUTH;
   const curIdx = CH.CH_STATUS.findIndex((s) => s.key === c.status);
   const tipoLbl = c.tipo === "ocorrencia" ? "Ocorrência de pedido" : "Solicitação avulsa";
-  const podeStatus = A.can(me, "chamadosStatus");
+  const podeStatus = A.can(me, "status");
 
   return (
     <div className="ex-overlay ex-overlay--right" onMouseDown={onClose}>
@@ -318,7 +319,7 @@ function ChamadoDrawer({ chamado, me, onClose, onStatus, onDelete, onSendGlpi, o
             <h2>{c.titulo}</h2>
           </div>
           <div className="ex-drawer-actions">
-            {A.can(me, "chamadosEditar") && <button className="ex-icobtn" onClick={() => onEdit(c)} title="Editar" aria-label="Editar"><Icons.edit size={16} /></button>}
+            {A.can(me, "editar") && <button className="ex-icobtn" onClick={() => onEdit(c)} title="Editar" aria-label="Editar"><Icons.edit size={16} /></button>}
             <button className="ex-icobtn" onClick={onClose} aria-label="Fechar"><Icons.x /></button>
           </div>
         </div>
@@ -337,7 +338,7 @@ function ChamadoDrawer({ chamado, me, onClose, onStatus, onDelete, onSendGlpi, o
           {tab === "hist" ? (
             <div className="ex-mt"><Timeline events={c.historico} /></div>
           ) : tab === "anexos" ? (
-            <AttachmentsPanel anexos={c.anexos} podeEditar={A.can(me, "anexosEditar")}
+            <AttachmentsPanel anexos={c.anexos} podeEditar={A.can(me, "editar")}
               onAdd={(novos) => onAddAnexo(c.id, novos)} onRemove={(axId) => onRemoveAnexo(c.id, axId)} />
           ) : (
           <>
@@ -360,7 +361,7 @@ function ChamadoDrawer({ chamado, me, onClose, onStatus, onDelete, onSendGlpi, o
                 <span>Abra um ticket no GLPI a partir deste chamado.</span>
               </div>
             )}
-            {!c.glpi.sent && A.can(me, "chamadosGlpi") && (
+            {!c.glpi.sent && A.can(me, "glpi") && (
               <button className="ex-btn ex-btn--primary ex-glpi-panel-btn" onClick={() => onSendGlpi(c)}>
                 <Icons.send size={15} /> Enviar ao GLPI
               </button>
@@ -400,7 +401,7 @@ function ChamadoDrawer({ chamado, me, onClose, onStatus, onDelete, onSendGlpi, o
           <div className="ex-eyebrow ex-mt">Descrição</div>
           <p className="ex-obs">{c.descricao}</p>
 
-          {A.can(me, "chamadosExcluir") && (
+          {A.can(me, "excluir") && (
             <button className="ex-del" onClick={() => onDelete(c.id)}>
               <Icons.trash size={15} /> Excluir chamado
             </button>

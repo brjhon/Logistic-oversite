@@ -47,6 +47,7 @@ Chaves usadas:
 ```text
 eixo.orders.v1
 eixo.chamados.v1
+eixo.estoque.v1
 eixo.user.v1
 ```
 
@@ -58,6 +59,7 @@ Limpar os dados do site no navegador faz o app voltar para os dados de exemplo.
 - `app.jsx`: orquestração da aplicação.
 - `seed.js`: dados de exemplo e helpers de pedidos.
 - `chamados.js`: dados de exemplo e helpers de chamados.
+- `estoque.js`: dados de exemplo e helpers de estoque.
 - `auth.js`: usuários demo e permissões.
 - `pedidos.jsx`: telas e componentes de pedidos.
 - `chamados.jsx`: telas e componentes de chamados/GLPI.
@@ -66,6 +68,7 @@ Limpar os dados do site no navegador faz o app voltar para os dados de exemplo.
 - `relatorios.jsx`: KPIs, relatórios e exportação CSV.
 - `activity.jsx`: histórico geral.
 - `warroom.jsx`: sala de guerra operacional e notificações ao vivo.
+- `estoque.jsx`: tela de estoque/almoxarifado e movimentações.
 - `components.jsx`: componentes visuais compartilhados.
 - `history.js`: eventos e linha do tempo.
 - `tweaks-panel.jsx`: painel de ajustes visuais.

@@ -25,15 +25,15 @@ function Info({ icon: I, label, value, accent }) {
 }
 
 /* ---------------- Modal adicionar / editar pedido ---------------- */
-function OrderModal({ onClose, onSave, nextNum, edit, showValues = true }) {
+function OrderModal({ onClose, onSave, nextNum, edit, prefill }) {
   const isEdit = !!edit;
   const [f, setF] = useState(() => edit ? {
     numero: edit.numero, nota: edit.nota || "", cliente: edit.cliente, fornecedor: edit.fornecedor === "—" ? "" : edit.fornecedor,
     responsavel: edit.responsavel === "—" ? "" : edit.responsavel, previsao: edit.previsao || "", status: edit.status, obs: edit.obs || "",
   } : {
-    numero: nextNum, nota: "", cliente: "", fornecedor: "", responsavel: "", previsao: "", status: "aguardando", obs: "",
+    numero: nextNum, nota: "", cliente: "", fornecedor: (prefill && prefill.fornecedor) || "", responsavel: "", previsao: "", status: "aguardando", obs: (prefill && prefill.obs) || "",
   });
-  const [itens, setItens] = useState(() => edit ? edit.itens.map((it) => ({ ...it, valor: it.valor })) : [{ nome: "", qtd: 1, valor: "" }]);
+  const [itens, setItens] = useState(() => edit ? edit.itens.map((it) => ({ ...it, valor: it.valor })) : (prefill && prefill.itens) ? prefill.itens.map((it) => ({ nome: it.nome, qtd: it.qtd, valor: it.valor, sku: it.sku })) : [{ nome: "", qtd: 1, valor: "" }]);
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
   const setItem = (i, k, v) => setItens((p) => p.map((it, j) => (j === i ? { ...it, [k]: v } : it)));
   const addItem = () => setItens((p) => [...p, { nome: "", qtd: 1, valor: "" }]);
@@ -45,7 +45,7 @@ function OrderModal({ onClose, onSave, nextNum, edit, showValues = true }) {
   const submit = () => {
     if (!valid) return;
     const clean = itens.filter((it) => it.nome.trim())
-      .map((it) => ({ nome: it.nome.trim(), qtd: Number(it.qtd) || 1, valor: Number(it.valor) || 0 }));
+      .map((it) => ({ nome: it.nome.trim(), qtd: Number(it.qtd) || 1, valor: Number(it.valor) || 0, ...(it.sku ? { sku: it.sku } : {}) }));
     const base = {
       numero: f.numero, nota: f.nota, cliente: f.cliente.trim(),
       fornecedor: f.fornecedor.trim() || "—", responsavel: f.responsavel.trim() || "—",
@@ -79,15 +79,15 @@ function OrderModal({ onClose, onSave, nextNum, edit, showValues = true }) {
 
           <div className="ex-items-head">
             <span className="ex-eyebrow">Itens do pedido</span>
-            {showValues && <span className="ex-items-total">Total {EXP.BRL(total)}</span>}
+            <span className="ex-items-total">Total {EXP.BRL(total)}</span>
           </div>
           <div className="ex-items">
-            <div className="ex-item-row ex-item-row--head" style={showValues ? null : { gridTemplateColumns: "1fr 72px 32px" }}><span>Peça / descrição</span><span>Qtd</span>{showValues && <span>Valor un.</span>}<span></span></div>
+            <div className="ex-item-row ex-item-row--head"><span>Peça / descrição</span><span>Qtd</span><span>Valor un.</span><span></span></div>
             {itens.map((it, i) => (
-              <div className="ex-item-row" key={i} style={showValues ? null : { gridTemplateColumns: "1fr 72px 32px" }}>
+              <div className="ex-item-row" key={i}>
                 <input value={it.nome} onChange={(e) => setItem(i, "nome", e.target.value)} placeholder="Ex: Pastilha de freio" />
                 <input type="number" min="1" value={it.qtd} onChange={(e) => setItem(i, "qtd", e.target.value)} />
-                {showValues && <input type="number" min="0" step="0.01" value={it.valor} onChange={(e) => setItem(i, "valor", e.target.value)} placeholder="0,00" />}
+                <input type="number" min="0" step="0.01" value={it.valor} onChange={(e) => setItem(i, "valor", e.target.value)} placeholder="0,00" />
                 <button className="ex-icobtn ex-icobtn--mini" onClick={() => rmItem(i)} disabled={itens.length === 1} aria-label="Remover"><Icons.trash size={15} /></button>
               </div>
             ))}
@@ -170,16 +170,15 @@ function ConferenciaModal({ order, onClose, onConfirm }) {
 }
 
 /* ---------------- Drawer de detalhe do pedido ---------------- */
-function DetailDrawer({ order, me, linked, onClose, onStatus, onDelete, onEdit, onConferir, onAbrirChamado, onOpenChamado, onAddAnexo, onRemoveAnexo, onComprovante, showValues = true }) {
+function DetailDrawer({ order, me, linked, onClose, onStatus, onDelete, onEdit, onConferir, onAbrirChamado, onOpenChamado, onAddAnexo, onRemoveAnexo, onComprovante }) {
   const [tab, setTab] = useState("detalhe");
   if (!order) return null;
   const total = EXP.orderTotal(order);
   const late = EXP.isLate(order);
   const curIdx = EXP.STATUS.findIndex((s) => s.key === order.status);
-  const podeEditar = AUP.can(me, "pedidosEditar");
-  const podeStatus = AUP.can(me, "pedidosStatus");
-  const podeConferir = AUP.can(me, "pedidosConferir");
-  const podeEditarAnexos = AUP.can(me, "anexosEditar");
+  const podeEditar = AUP.can(me, "editar");
+  const podeStatus = AUP.can(me, "status");
+  const podeConferir = AUP.can(me, "conferir");
   const conf = order.conferencia;
 
   return (
@@ -268,19 +267,19 @@ function DetailDrawer({ order, me, linked, onClose, onStatus, onDelete, onEdit, 
               <div className="ex-eyebrow ex-mt">Itens ({order.itens.length})</div>
               <div className="ex-dtable">
                 {order.itens.map((it, i) => (
-                  <div className="ex-dtable-row" key={i} style={showValues ? null : { gridTemplateColumns: "1fr 42px" }}>
+                  <div className="ex-dtable-row" key={i}>
                     <span className="ex-dt-name">{it.nome}</span>
                     <span className="ex-dt-qty">{it.qtd}×</span>
-                    {showValues && <span className="ex-dt-val">{EXP.BRL(it.valor)}</span>}
-                    {showValues && <span className="ex-dt-sub">{EXP.BRL(it.qtd * it.valor)}</span>}
+                    <span className="ex-dt-val">{EXP.BRL(it.valor)}</span>
+                    <span className="ex-dt-sub">{EXP.BRL(it.qtd * it.valor)}</span>
                   </div>
                 ))}
-                {showValues && <div className="ex-dtable-total"><span>Total do pedido</span><strong>{EXP.BRL(total)}</strong></div>}
+                <div className="ex-dtable-total"><span>Total do pedido</span><strong>{EXP.BRL(total)}</strong></div>
               </div>
 
               {order.obs && <><div className="ex-eyebrow ex-mt">Observações</div><p className="ex-obs">{order.obs}</p></>}
 
-              {AUP.can(me, "pedidosExcluir") && (
+              {AUP.can(me, "excluir") && (
                 <button className="ex-del" onClick={() => onDelete(order.id)}><Icons.trash size={15} /> Excluir pedido</button>
               )}
             </>
@@ -289,13 +288,13 @@ function DetailDrawer({ order, me, linked, onClose, onStatus, onDelete, onEdit, 
           {tab === "hist" && <div className="ex-mt"><Timeline events={order.historico} /></div>}
 
           {tab === "anexos" && (
-            <AttachmentsPanel anexos={order.anexos} podeEditar={podeEditarAnexos}
+            <AttachmentsPanel anexos={order.anexos} podeEditar={podeEditar}
               onAdd={(novos) => onAddAnexo(order.id, novos)} onRemove={(axId) => onRemoveAnexo(order.id, axId)} />
           )}
 
           {tab === "chamados" && (
             <div className="ex-mt">
-              {AUP.can(me, "chamadosCriar") && (
+              {AUP.can(me, "criar") && (
                 <button className="ex-btn ex-fullbtn" onClick={() => onAbrirChamado(order)} style={{ marginBottom: 14 }}>
                   <Icons.ticket size={16} /> Abrir chamado para este pedido
                 </button>
@@ -328,7 +327,7 @@ function DetailDrawer({ order, me, linked, onClose, onStatus, onDelete, onEdit, 
 }
 
 /* ---------------- Quadro ---------------- */
-function BoardView({ orders, onSelect, onAdvance, compact, showValues = true, canAdvance = true }) {
+function BoardView({ orders, onSelect, onAdvance, compact }) {
   return (
     <section className="ex-board">
       {EXP.STATUS.map((s) => {
@@ -338,7 +337,7 @@ function BoardView({ orders, onSelect, onAdvance, compact, showValues = true, ca
             <div className="ex-col-head"><span className="ex-col-dot" /><span className="ex-col-name">{s.label}</span><span className="ex-col-ct">{items.length}</span></div>
             <div className="ex-col-body">
               {items.length === 0 ? <div className="ex-col-empty">Sem pedidos</div> :
-                items.map((o) => <OrderCard key={o.id} order={o} compact={compact} onClick={() => onSelect(o.id)} onAdvance={onAdvance} showValues={showValues} canAdvance={canAdvance} />)}
+                items.map((o) => <OrderCard key={o.id} order={o} compact={compact} onClick={() => onSelect(o.id)} onAdvance={onAdvance} />)}
             </div>
           </div>
         );
@@ -350,17 +349,16 @@ function BoardView({ orders, onSelect, onAdvance, compact, showValues = true, ca
 /* ---------------- Lista ---------------- */
 function ListView({ orders, onSelect, showValues }) {
   if (orders.length === 0) return <div className="ex-empty">Nenhum pedido encontrado com esse filtro.</div>;
-  const grid = showValues ? null : { gridTemplateColumns: "96px 1.4fr 1fr 96px 56px 132px" };
   return (
     <section className="ex-listwrap">
       <div className="ex-tbl">
-        <div className="ex-tr ex-tr--head" style={grid}>
+        <div className="ex-tr ex-tr--head">
           <span>Pedido</span><span>Cliente / destino</span><span>Fornecedor</span><span>Previsão</span><span>Itens</span>{showValues && <span>Valor</span>}<span>Status</span>
         </div>
         {orders.map((o) => {
           const late = EXP.isLate(o);
           return (
-            <div className="ex-tr" key={o.id} onClick={() => onSelect(o.id)} style={grid}>
+            <div className="ex-tr" key={o.id} onClick={() => onSelect(o.id)}>
               <span className="ex-tr-num">{o.numero}</span>
               <span className="ex-tr-client">{o.cliente}</span>
               <span className="ex-tr-mut">{o.fornecedor}</span>

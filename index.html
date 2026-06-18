@@ -523,6 +523,55 @@ input,select,textarea{font-family:inherit}
 .ex-hist-src.is-ped{color:var(--accent-d)}
 .ex-hist-src.is-cham{color:#B66A12}
 
+/* ===== login brava (split-screen) ===== */
+.ex-login2{height:100%;display:grid;grid-template-columns:1.05fr .95fr;background:var(--bg)}
+.ex-login2-brand{position:relative;overflow:hidden;color:#fff;padding:40px 46px;display:flex;flex-direction:column;
+  background:linear-gradient(155deg,#17273f 0%, #0e1828 52%, #14315e 128%)}
+.ex-login2-grid{position:absolute;inset:0;opacity:.5;
+  background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+  background-size:46px 46px;mask-image:radial-gradient(120% 90% at 30% 20%,#000 30%,transparent 75%)}
+.ex-login2-routes{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.ex-route{fill:none;stroke:url(#lg);stroke-width:2;stroke-dasharray:7 9;opacity:.55;animation:dash 22s linear infinite}
+.ex-route--2{animation-duration:30s;opacity:.4}
+@keyframes dash{to{stroke-dashoffset:-320}}
+.ex-nodes circle{opacity:.55}
+.ex-traveler{filter:drop-shadow(0 0 7px rgba(160,200,255,.9))}
+.ex-login2-brandtop,.ex-login2-hero,.ex-login2-foot{position:relative;z-index:1}
+.ex-login2-brandtop{display:flex;align-items:center;gap:14px}
+.ex-login2-word strong{display:block;font-size:22px;font-weight:700;letter-spacing:.18em;line-height:1}
+.ex-login2-word span{font-size:12px;color:#9fb2cc;letter-spacing:.02em}
+.ex-login2-hero{margin-top:auto;margin-bottom:auto;padding:30px 0}
+.ex-login2-hero h1{font-size:40px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:0 0 16px;text-wrap:balance}
+.ex-login2-hero p{font-size:15.5px;color:#b8c6db;line-height:1.55;max-width:430px;margin:0 0 26px}
+.ex-login2-feats{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:13px}
+.ex-login2-feats li{display:flex;align-items:center;gap:12px;font-size:14.5px;color:#dbe5f2}
+.ex-login2-feats li span{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex:none;
+  background:rgba(120,160,220,.16);border:1px solid rgba(150,185,235,.28);color:#bcd2f0}
+.ex-login2-foot{font-size:12px;color:#7c8ca6;font-family:var(--mono);letter-spacing:.03em}
+
+.ex-login2-form{display:grid;place-items:center;padding:30px;overflow:auto}
+.ex-login2-card{width:min(420px,100%)}
+.ex-login2-mobilebrand{display:none;align-items:center;gap:12px;margin-bottom:22px}
+.ex-login2-mobilebrand strong{font-size:20px;letter-spacing:.14em;font-weight:700}
+.ex-login2-h{margin-bottom:22px}
+.ex-login2-h h2{margin:0 0 5px;font-size:25px;font-weight:700;letter-spacing:-.01em}
+.ex-login2-h p{margin:0;font-size:14px;color:var(--tx2)}
+.ex-login2-card .ex-userlist{margin-top:7px}
+.ex-pass{position:relative;display:flex;align-items:center}
+.ex-pass input{flex:1;background:var(--bg2);border:1px solid var(--line2);border-radius:9px;padding:11px 42px 11px 12px;
+  color:var(--tx);font-size:14px;outline:none;transition:.14s;width:100%}
+.ex-pass input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint)}
+.ex-pass-eye{position:absolute;right:6px;width:32px;height:32px;border:0;background:transparent;color:var(--tx3);border-radius:7px;display:grid;place-items:center}
+.ex-pass-eye:hover{color:var(--tx)}
+.ex-login2-btn{width:100%;justify-content:center;height:46px;font-size:15px;margin-top:18px}
+.ex-login2-demo{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:16px;font-size:12px;color:var(--tx3)}
+.ex-login2-demo b{color:var(--tx2);font-family:var(--mono)}
+@media(max-width:860px){
+  .ex-login2{grid-template-columns:1fr}
+  .ex-login2-brand{display:none}
+  .ex-login2-mobilebrand{display:flex}
+}
+
 /* FAB */
 .ex-fab{display:none;position:fixed;right:18px;bottom:18px;width:56px;height:56px;border-radius:99px;
   border:0;background:var(--accent);color:#fff;z-index:40;box-shadow:0 8px 22px -6px rgba(35,74,120,.5);place-items:center}
@@ -603,7 +652,6 @@ html[data-density="compact"] .ex-col-body{gap:7px;padding:9px}
 <body>
 <div id="root"></div>
 
-<script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>

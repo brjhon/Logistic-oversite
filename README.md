@@ -68,7 +68,7 @@ Limpar os dados do site no navegador faz o app voltar para os dados de exemplo.
 - Autenticação apenas demonstrativa, feita no cliente.
 - Persistência apenas em `localStorage`, sem backend.
 - Integração GLPI simulada.
-- Dependência de CDN para React, ReactDOM, Babel e html2canvas.
+- Dependência de CDN para React, ReactDOM e Babel.
 - JSX é compilado no navegador, adequado para demo, não para produção.
 
 ## Próximos passos recomendados
